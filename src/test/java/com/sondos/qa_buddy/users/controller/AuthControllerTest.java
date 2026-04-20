@@ -1,4 +1,4 @@
-package com.sondos.qa_buddy.users.api;
+package com.sondos.qa_buddy.users.controller;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;

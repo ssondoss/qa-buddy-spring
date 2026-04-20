@@ -3,8 +3,8 @@ package com.sondos.qa_buddy.shared.api;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import com.sondos.qa_buddy.users.application.EmailAlreadyRegisteredException;
-import com.sondos.qa_buddy.users.application.InvalidCredentialsException;
+import com.sondos.qa_buddy.users.exception.EmailAlreadyRegisteredException;
+import com.sondos.qa_buddy.users.exception.InvalidCredentialsException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;

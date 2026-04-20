@@ -1,11 +1,13 @@
-package com.sondos.qa_buddy.users.application;
+package com.sondos.qa_buddy.users.service;
 
 import java.time.Instant;
-import java.util.Locale;
 import java.util.UUID;
 
-import com.sondos.qa_buddy.users.domain.User;
-import com.sondos.qa_buddy.users.infrastructure.UserRepository;
+import com.sondos.qa_buddy.shared.email.EmailService;
+import com.sondos.qa_buddy.users.entity.User;
+import com.sondos.qa_buddy.users.exception.EmailAlreadyRegisteredException;
+import com.sondos.qa_buddy.users.exception.InvalidCredentialsException;
+import com.sondos.qa_buddy.users.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,10 +15,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 public class UserService {
+	private final EmailService emailService;
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 
-	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+	public UserService(
+			EmailService emailService,
+			UserRepository userRepository,
+			PasswordEncoder passwordEncoder
+	) {
+		this.emailService = emailService;
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 	}
@@ -35,7 +43,9 @@ public class UserService {
 				Instant.now()
 		);
 
-		return userRepository.save(user);
+		User savedUser = userRepository.save(user);
+		emailService.sendRegistrationEmail(savedUser);
+		return savedUser;
 	}
 
 	@Transactional(readOnly = true)
@@ -53,7 +63,7 @@ public class UserService {
 	}
 
 	private static String normalizeEmail(String email) {
-		return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+		return email == null ? null : email.trim().toLowerCase();
 	}
 }
 

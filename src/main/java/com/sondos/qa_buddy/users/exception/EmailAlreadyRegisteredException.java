@@ -1,4 +1,4 @@
-package com.sondos.qa_buddy.users.application;
+package com.sondos.qa_buddy.users.exception;
 
 public class EmailAlreadyRegisteredException extends RuntimeException {
 	public EmailAlreadyRegisteredException() {

@@ -1,4 +1,4 @@
-package com.sondos.qa_buddy.users.api.dto;
+package com.sondos.qa_buddy.users.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

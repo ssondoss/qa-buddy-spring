@@ -1,13 +1,14 @@
-package com.sondos.qa_buddy.users.api;
+package com.sondos.qa_buddy.users.controller;
 
 import com.sondos.qa_buddy.security.JwtService;
 import com.sondos.qa_buddy.security.JwtToken;
-import com.sondos.qa_buddy.users.api.dto.AuthResponse;
-import com.sondos.qa_buddy.users.api.dto.LoginRequest;
-import com.sondos.qa_buddy.users.api.dto.RegisterRequest;
-import com.sondos.qa_buddy.users.application.UserService;
-import com.sondos.qa_buddy.users.domain.User;
+import com.sondos.qa_buddy.users.dto.AuthResponse;
+import com.sondos.qa_buddy.users.dto.LoginRequest;
+import com.sondos.qa_buddy.users.dto.RegisterRequest;
+import com.sondos.qa_buddy.users.entity.User;
+import com.sondos.qa_buddy.users.service.UserService;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,14 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@AllArgsConstructor
 public class AuthController {
 	private final UserService userService;
 	private final JwtService jwtService;
-
-	public AuthController(UserService userService, JwtService jwtService) {
-		this.userService = userService;
-		this.jwtService = jwtService;
-	}
 
 	@PostMapping("/register")
 	public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {

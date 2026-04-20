@@ -1,4 +1,4 @@
-package com.sondos.qa_buddy.users.domain;
+package com.sondos.qa_buddy.users.entity;
 
 import java.time.Instant;
 import java.util.Objects;
