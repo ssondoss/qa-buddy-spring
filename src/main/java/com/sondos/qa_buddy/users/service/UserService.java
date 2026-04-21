@@ -3,54 +3,48 @@ package com.sondos.qa_buddy.users.service;
 import java.time.Instant;
 import java.util.UUID;
 
-import com.sondos.qa_buddy.shared.email.EmailService;
 import com.sondos.qa_buddy.users.entity.User;
 import com.sondos.qa_buddy.users.exception.EmailAlreadyRegisteredException;
+import com.sondos.qa_buddy.users.exception.EmailNotVerifiedException;
 import com.sondos.qa_buddy.users.exception.InvalidCredentialsException;
 import com.sondos.qa_buddy.users.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class UserService {
-	private final EmailService emailService;
+	private final EmailVerificationService emailVerificationService;
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 
-	public UserService(
-			EmailService emailService,
-			UserRepository userRepository,
-			PasswordEncoder passwordEncoder
-	) {
-		this.emailService = emailService;
-		this.userRepository = userRepository;
-		this.passwordEncoder = passwordEncoder;
-	}
-
-	public User register(String email, String rawPassword) {
-		String normalizedEmail = normalizeEmail(email);
+	public RegistrationResult register(String email, String rawPassword) {
+		String normalizedEmail = EmailNormalizer.normalize(email);
 
 		if (userRepository.existsByEmail(normalizedEmail)) {
 			throw new EmailAlreadyRegisteredException();
 		}
 
-		User user = new User(
-				UUID.randomUUID(),
-				normalizedEmail,
-				passwordEncoder.encode(rawPassword),
-				Instant.now()
-		);
+		User user = User.builder()
+				.id(UUID.randomUUID())
+				.email(normalizedEmail)
+				.passwordHash(passwordEncoder.encode(rawPassword))
+				.createdAt(Instant.now())
+				.emailVerified(false)
+				.emailVerifiedAt(null)
+				.build();
 
 		User savedUser = userRepository.save(user);
-		emailService.sendRegistrationEmail(savedUser);
-		return savedUser;
+		boolean verificationEmailSent = emailVerificationService.createAndSendVerification(savedUser);
+		return new RegistrationResult(savedUser, verificationEmailSent);
 	}
 
 	@Transactional(readOnly = true)
 	public User authenticate(String email, String rawPassword) {
-		String normalizedEmail = normalizeEmail(email);
+		String normalizedEmail = EmailNormalizer.normalize(email);
 
 		User user = userRepository.findByEmail(normalizedEmail)
 				.orElseThrow(InvalidCredentialsException::new);
@@ -59,11 +53,11 @@ public class UserService {
 			throw new InvalidCredentialsException();
 		}
 
-		return user;
-	}
+		if (!user.isEmailVerified()) {
+			throw new EmailNotVerifiedException();
+		}
 
-	private static String normalizeEmail(String email) {
-		return email == null ? null : email.trim().toLowerCase();
+		return user;
 	}
 }
 

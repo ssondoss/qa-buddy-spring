@@ -28,32 +28,38 @@ public class SmtpEmailService implements EmailService {
 	}
 
 	@Override
-	public void sendRegistrationEmail(User user) {
+	public boolean sendVerificationEmail(User user, String verificationUrl) {
 		if (!mailEnabled) {
-			return;
+			log.warn("Verification email skipped because app.mail.enabled is false");
+			return false;
 		}
 
 		if (fromAddress == null || fromAddress.isBlank()) {
-			log.warn("Registration email skipped because app.mail.from is not configured");
-			return;
+			log.warn("Verification email skipped because app.mail.from is not configured");
+			return false;
 		}
 
 		SimpleMailMessage message = new SimpleMailMessage();
 		message.setFrom(fromAddress);
 		message.setTo(user.getEmail());
-		message.setSubject("Welcome to QA Buddy");
+		message.setSubject("Verify your QA Buddy account");
 		message.setText("""
 				Hi,
 
-				Your QA Buddy account has been created successfully.
+				Thanks for registering with QA Buddy.
 
-				You can now log in and start using the application.
+				Verify your email address by opening this link:
+				%s
 				""");
+		message.setText(message.getText().formatted(verificationUrl));
 
 		try {
 			mailSender.send(message);
+			log.info("Verification email sent to {}", user.getEmail());
+			return true;
 		} catch (MailException ex) {
-			log.warn("Failed to send registration email to {}", user.getEmail(), ex);
+			log.warn("Failed to send verification email to {}", user.getEmail(), ex);
+			return false;
 		}
 	}
 }

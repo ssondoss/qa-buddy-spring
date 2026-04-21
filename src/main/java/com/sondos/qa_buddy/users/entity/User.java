@@ -8,7 +8,16 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "users")
 public class User {
@@ -24,30 +33,15 @@ public class User {
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
-	protected User() {
-	}
+	@Column(name = "email_verified", nullable = false)
+	private boolean emailVerified;
 
-	public User(UUID id, String email, String passwordHash, Instant createdAt) {
-		this.id = Objects.requireNonNull(id, "id must not be null");
-		this.email = Objects.requireNonNull(email, "email must not be null");
-		this.passwordHash = Objects.requireNonNull(passwordHash, "passwordHash must not be null");
-		this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
-	}
+	@Column(name = "email_verified_at")
+	private Instant emailVerifiedAt;
 
-	public UUID getId() {
-		return id;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public String getPasswordHash() {
-		return passwordHash;
-	}
-
-	public Instant getCreatedAt() {
-		return createdAt;
+	public void markEmailVerified(Instant verifiedAt) {
+		this.emailVerified = true;
+		this.emailVerifiedAt = Objects.requireNonNull(verifiedAt, "verifiedAt must not be null");
 	}
 }
 
