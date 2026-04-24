@@ -3,6 +3,8 @@ package com.sondos.qa_buddy.security;
 import java.time.Instant;
 import java.util.UUID;
 
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
@@ -30,7 +32,8 @@ public class JwtService {
 				.claim("uid", userId.toString())
 				.build();
 
-		String tokenValue = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
+		String tokenValue = jwtEncoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
 		return new JwtToken(tokenValue, expiresAt);
 	}
 }

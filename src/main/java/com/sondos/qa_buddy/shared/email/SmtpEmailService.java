@@ -3,6 +3,7 @@ package com.sondos.qa_buddy.shared.email;
 import com.sondos.qa_buddy.users.entity.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -10,6 +11,7 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
+@ConditionalOnProperty(name = "app.mail.enabled", havingValue = "true")
 public class SmtpEmailService implements EmailService {
 	private static final Logger log = LoggerFactory.getLogger(SmtpEmailService.class);
 

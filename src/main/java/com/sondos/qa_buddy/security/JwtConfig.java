@@ -1,6 +1,7 @@
 package com.sondos.qa_buddy.security;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -19,10 +20,15 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)
 public class JwtConfig {
+	private static final int MIN_SECRET_BYTES = 32;
 
 	@Bean
 	SecretKey jwtSecretKey(JwtProperties properties) {
-		byte[] secretBytes = properties.getSecret().getBytes(StandardCharsets.UTF_8);
+		String secret = Objects.requireNonNull(properties.getSecret(), "app.security.jwt.secret must not be null");
+		byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+		if (secretBytes.length < MIN_SECRET_BYTES) {
+			throw new IllegalStateException("app.security.jwt.secret must be at least 32 bytes (256 bits)");
+		}
 		return new SecretKeySpec(secretBytes, "HmacSHA256");
 	}
 

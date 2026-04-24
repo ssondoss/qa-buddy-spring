@@ -7,6 +7,8 @@ import com.sondos.qa_buddy.users.exception.EmailAlreadyRegisteredException;
 import com.sondos.qa_buddy.users.exception.EmailNotVerifiedException;
 import com.sondos.qa_buddy.users.exception.InvalidCredentialsException;
 import com.sondos.qa_buddy.users.exception.InvalidVerificationTokenException;
+import com.sondos.qa_buddy.security.AuthenticatedUserNotFoundException;
+import com.sondos.qa_buddy.workflows.exception.WorkflowNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,18 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(InvalidVerificationTokenException.class)
 	public ResponseEntity<ApiResponse<Void>> handleInvalidVerificationToken(InvalidVerificationTokenException ex) {
 		return buildError(HttpStatus.BAD_REQUEST, ex.getMessage(), null);
+	}
+
+	@ExceptionHandler(AuthenticatedUserNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleAuthenticatedUserNotFound(
+			AuthenticatedUserNotFoundException ex
+	) {
+		return buildError(HttpStatus.UNAUTHORIZED, ex.getMessage(), null);
+	}
+
+	@ExceptionHandler(WorkflowNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleWorkflowNotFound(WorkflowNotFoundException ex) {
+		return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), null);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
