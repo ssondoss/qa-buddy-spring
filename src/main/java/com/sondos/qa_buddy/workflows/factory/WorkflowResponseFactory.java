@@ -3,24 +3,23 @@ package com.sondos.qa_buddy.workflows.factory;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import com.sondos.qa_buddy.shared.api.PaginatedResponse;
 import com.sondos.qa_buddy.workflows.dto.WorkflowDetailResponse;
 import com.sondos.qa_buddy.workflows.dto.WorkflowListItemResponse;
 import com.sondos.qa_buddy.workflows.dto.WorkflowStepView;
 import com.sondos.qa_buddy.workflows.entity.Workflow;
 import com.sondos.qa_buddy.workflows.entity.WorkflowStep;
 import com.sondos.qa_buddy.workflows.entity.WorkflowVersion;
-import org.springframework.data.domain.Page;
+import com.sondos.qa_buddy.workflows.repository.WorkflowVersionRepository;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WorkflowResponseFactory {
-	public WorkflowListItemResponse toListItem(Workflow workflow) {
+	public WorkflowListItemResponse toListItem(Workflow workflow, WorkflowVersion version) {
 		return new WorkflowListItemResponse(
 				workflow.getId(),
 				workflow.getName(),
 				workflow.getDescription(),
-				workflow.getStatus(),
+				version.getStatus(),
 				workflow.getCurrentVersion(),
 				workflow.getCreatedAt(),
 				workflow.getUpdatedAt()
@@ -49,21 +48,32 @@ public class WorkflowResponseFactory {
 				version.getVersionNumber(),
 				workflow.getName(),
 				workflow.getDescription(),
-				workflow.getStatus(),
+				version.getStatus(),
 				workflow.getCreatedAt(),
 				workflow.getUpdatedAt(),
 				steps.stream().map(this::toStepView).toList()
 		);
 	}
 
-	public PaginatedResponse<WorkflowListItemResponse> toPage(Page<Workflow> page) {
-		return new PaginatedResponse<>(
-				page.getContent().stream().map(this::toListItem).toList(),
-				page.getNumber(),
-				page.getSize(),
-				page.getTotalElements(),
-				page.getTotalPages(),
-				page.isLast()
-		);
+	public List<WorkflowListItemResponse> toList(
+			List<Workflow> workflows,
+			WorkflowVersionRepository workflowVersionRepository
+	) {
+		return workflows.stream()
+				.map(workflow -> workflowVersionRepository.findByWorkflowIdAndVersionNumber(
+								workflow.getId(),
+								workflow.getCurrentVersion()
+						)
+						.map(version -> toListItem(workflow, version))
+						.orElseGet(() -> new WorkflowListItemResponse(
+								workflow.getId(),
+								workflow.getName(),
+								workflow.getDescription(),
+								null,
+								workflow.getCurrentVersion(),
+								workflow.getCreatedAt(),
+								workflow.getUpdatedAt()
+						)))
+				.toList();
 	}
 }

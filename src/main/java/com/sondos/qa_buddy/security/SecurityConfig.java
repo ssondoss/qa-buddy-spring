@@ -37,6 +37,7 @@ public class SecurityConfig {
 								"/api/auth/login",
 								"/api/auth/resend-verification"
 						).permitAll()
+						.requestMatchers(HttpMethod.POST, "/api/workflow-versions/*/complete").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/auth/verify-email").permitAll()
 						.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
 						.requestMatchers("/error").permitAll()

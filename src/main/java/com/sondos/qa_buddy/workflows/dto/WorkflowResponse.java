@@ -2,12 +2,12 @@ package com.sondos.qa_buddy.workflows.dto;
 
 import java.util.UUID;
 
-import com.sondos.qa_buddy.workflows.enums.WorkflowStatus;
+import com.sondos.qa_buddy.workflows.enums.WorkflowVersionStatus;
 
 public record WorkflowResponse(
 		UUID workflowId,
 		UUID workflowVersionId,
 		int versionNumber,
 		int stepCount,
-		WorkflowStatus status
+		WorkflowVersionStatus versionStatus
 ) {}

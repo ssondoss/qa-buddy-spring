@@ -17,9 +17,10 @@ public class WorkflowStepFactory {
 			User user,
 			Instant now,
 			int orderIndex,
-			WorkflowStepRequest request
+			WorkflowStepRequest request,
+			WorkflowStepSource defaultSource
 	) {
-		WorkflowStepSource source = request.source() == null ? WorkflowStepSource.MANUAL : request.source();
+		WorkflowStepSource source = request.source() == null ? defaultSource : request.source();
 		return WorkflowStep.builder()
 				.id(java.util.UUID.randomUUID())
 				.workflowVersion(version)

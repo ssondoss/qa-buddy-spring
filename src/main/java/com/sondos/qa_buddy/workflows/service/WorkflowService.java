@@ -3,10 +3,8 @@ package com.sondos.qa_buddy.workflows.service;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.IntStream;
 
 import com.sondos.qa_buddy.security.CurrentUserService;
-import com.sondos.qa_buddy.shared.api.PaginatedResponse;
 import com.sondos.qa_buddy.users.entity.User;
 import com.sondos.qa_buddy.workflows.dto.WorkflowDetailResponse;
 import com.sondos.qa_buddy.workflows.dto.WorkflowRequest;
@@ -15,14 +13,12 @@ import com.sondos.qa_buddy.workflows.dto.WorkflowListItemResponse;
 import com.sondos.qa_buddy.workflows.entity.Workflow;
 import com.sondos.qa_buddy.workflows.entity.WorkflowStep;
 import com.sondos.qa_buddy.workflows.entity.WorkflowVersion;
-import com.sondos.qa_buddy.workflows.enums.WorkflowStatus;
-import com.sondos.qa_buddy.workflows.factory.WorkflowStepFactory;
+import com.sondos.qa_buddy.workflows.enums.WorkflowVersionStatus;
 import com.sondos.qa_buddy.workflows.factory.WorkflowResponseFactory;
 import com.sondos.qa_buddy.workflows.exception.WorkflowNotFoundException;
 import com.sondos.qa_buddy.workflows.repository.WorkflowRepository;
 import com.sondos.qa_buddy.workflows.repository.WorkflowStepRepository;
 import com.sondos.qa_buddy.workflows.repository.WorkflowVersionRepository;
-import org.springframework.data.domain.Pageable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -33,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class WorkflowService {
 	private final CurrentUserService currentUserService;
-	private final WorkflowStepFactory workflowStepFactory;
 	private final WorkflowResponseFactory workflowResponseFactory;
 	private final WorkflowRepository workflowRepository;
 	private final WorkflowVersionRepository workflowVersionRepository;
@@ -47,73 +42,68 @@ public class WorkflowService {
 				.id(UUID.randomUUID())
 				.name(request.name())
 				.description(request.description())
-				.status(request.status() == null ? WorkflowStatus.DRAFT : request.status())
 				.currentVersion(1)
 				.createdBy(user)
 				.createdAt(now)
 				.updatedAt(now)
 				.build());
 
-		WorkflowVersion savedVersion = workflowVersionRepository.save(WorkflowVersion.builder()
-				.id(UUID.randomUUID())
-				.workflow(savedWorkflow)
-				.versionNumber(1)
-				.createdBy(user)
-				.createdAt(now)
-				.build());
-
-		List<WorkflowStep> steps = buildSteps(savedVersion, user, now, request);
-		workflowStepRepository.saveAll(steps);
+		WorkflowVersion savedVersion = workflowVersionRepository.save(
+				WorkflowVersion.builder()
+						.id(UUID.randomUUID())
+						.workflow(savedWorkflow)
+						.versionNumber(1)
+						.status(WorkflowVersionStatus.DRAFT)
+						.createdBy(user)
+						.createdAt(now)
+						.updatedAt(now)
+						.build()
+		);
 
 		return new WorkflowResponse(
 				savedWorkflow.getId(),
 				savedVersion.getId(),
 				savedVersion.getVersionNumber(),
-				steps.size(),
-				savedWorkflow.getStatus()
+				0,
+				savedVersion.getStatus()
 		);
 	}
 
 	public WorkflowResponse update(Jwt jwt, UUID workflowId, WorkflowRequest request) {
-		User user = currentUserService.getCurrentUser(jwt);
+		currentUserService.getCurrentUser(jwt);
 		Workflow workflow = workflowRepository.findByIdAndDeletedAtIsNull(workflowId)
 				.orElseThrow(WorkflowNotFoundException::new);
 
 		Instant now = Instant.now();
-		int nextVersionNumber = workflow.getCurrentVersion() + 1;
-
-		WorkflowVersion savedVersion = workflowVersionRepository.save(WorkflowVersion.builder()
-				.id(UUID.randomUUID())
-				.workflow(workflow)
-				.versionNumber(nextVersionNumber)
-				.createdBy(user)
-				.createdAt(now)
-				.build());
-
-		List<WorkflowStep> steps = buildSteps(savedVersion, user, now, request);
-		workflowStepRepository.saveAll(steps);
-
 		workflow.updateDetails(
 				request.name(),
 				request.description(),
-				request.status() == null ? workflow.getStatus() : request.status(),
-				nextVersionNumber,
+				workflow.getCurrentVersion(),
 				now
 		);
 		workflowRepository.save(workflow);
 
+		WorkflowVersion currentVersion = workflowVersionRepository.findByWorkflowIdAndVersionNumber(
+						workflow.getId(),
+						workflow.getCurrentVersion()
+				)
+				.orElseThrow(WorkflowNotFoundException::new);
+
 		return new WorkflowResponse(
 				workflow.getId(),
-				savedVersion.getId(),
-				savedVersion.getVersionNumber(),
-				steps.size(),
-				workflow.getStatus()
+				currentVersion.getId(),
+				currentVersion.getVersionNumber(),
+				0,
+				currentVersion.getStatus()
 		);
 	}
 
 	@Transactional(readOnly = true)
-	public PaginatedResponse<WorkflowListItemResponse> getAll(Pageable pageable) {
-		return workflowResponseFactory.toPage(workflowRepository.findByDeletedAtIsNull(pageable));
+	public List<WorkflowListItemResponse> getAll() {
+		return workflowResponseFactory.toList(
+				workflowRepository.findByDeletedAtIsNullOrderByUpdatedAtDesc(),
+				workflowVersionRepository
+		);
 	}
 
 	@Transactional(readOnly = true)
@@ -129,26 +119,5 @@ public class WorkflowService {
 
 		List<WorkflowStep> steps = workflowStepRepository.findByWorkflowVersionIdOrderByOrderIndexAsc(version.getId());
 		return workflowResponseFactory.toDetail(workflow, version, steps);
-	}
-
-	private List<WorkflowStep> buildSteps(
-			WorkflowVersion version,
-			User user,
-			Instant now,
-			WorkflowRequest request
-	) {
-		List<com.sondos.qa_buddy.workflows.dto.WorkflowStepRequest> steps = request.steps() == null
-				? List.of()
-				: request.steps();
-
-		return IntStream.range(0, steps.size())
-				.mapToObj(index -> workflowStepFactory.create(
-						version,
-						user,
-						now,
-						index + 1,
-						steps.get(index)
-				))
-				.toList();
 	}
 }

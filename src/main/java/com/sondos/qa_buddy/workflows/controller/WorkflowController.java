@@ -1,9 +1,9 @@
 package com.sondos.qa_buddy.workflows.controller;
 
+import java.util.List;
 import java.util.UUID;
 
 import com.sondos.qa_buddy.shared.api.ApiResponse;
-import com.sondos.qa_buddy.shared.api.PaginatedResponse;
 import com.sondos.qa_buddy.workflows.dto.WorkflowDetailResponse;
 import com.sondos.qa_buddy.workflows.dto.WorkflowRequest;
 import com.sondos.qa_buddy.workflows.dto.WorkflowResponse;
@@ -15,9 +15,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,10 +50,8 @@ public class WorkflowController {
 	}
 
 	@GetMapping
-	public ResponseEntity<ApiResponse<PaginatedResponse<WorkflowListItemResponse>>> getAll(
-			@PageableDefault(size = 10, sort = "updatedAt", direction = Sort.Direction.DESC) Pageable pageable
-	) {
-		PaginatedResponse<WorkflowListItemResponse> response = workflowService.getAll(pageable);
+	public ResponseEntity<ApiResponse<List<WorkflowListItemResponse>>> getAll() {
+		List<WorkflowListItemResponse> response = workflowService.getAll();
 		return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Workflows fetched", response));
 	}
 

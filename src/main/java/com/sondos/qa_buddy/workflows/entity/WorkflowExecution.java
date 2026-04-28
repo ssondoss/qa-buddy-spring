@@ -2,9 +2,9 @@ package com.sondos.qa_buddy.workflows.entity;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.Objects;
 
 import com.sondos.qa_buddy.users.entity.User;
-import com.sondos.qa_buddy.workflows.enums.WorkflowEnvironment;
 import com.sondos.qa_buddy.workflows.enums.WorkflowExecutionStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,13 +21,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(
+	@Table(
 		name = "workflow_executions",
 		indexes = {
 				@Index(name = "idx_workflow_executions_workflow", columnList = "workflow_id"),
@@ -59,7 +60,37 @@ public class WorkflowExecution {
 	@JoinColumn(name = "triggered_by", nullable = false)
 	private User triggeredBy;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, length = 30)
-	private WorkflowEnvironment environment;
+	@Nullable
+	@Column(name = "environment_name_snapshot", length = 160)
+	private String environmentNameSnapshot;
+
+	@Nullable
+	@Column(name = "environment_web_base_url_snapshot", length = 1000)
+	private String environmentWebBaseUrlSnapshot;
+
+	@Nullable
+	@Column(name = "environment_api_base_url_snapshot", length = 1000)
+	private String environmentApiBaseUrlSnapshot;
+
+	public void captureEnvironmentSnapshot(
+			String environmentName,
+			String environmentWebBaseUrl,
+			@Nullable String environmentApiBaseUrl
+	) {
+		this.environmentNameSnapshot = Objects.requireNonNull(environmentName, "environmentName must not be null");
+		this.environmentWebBaseUrlSnapshot = Objects.requireNonNull(
+				environmentWebBaseUrl,
+				"environmentWebBaseUrl must not be null"
+		);
+		this.environmentApiBaseUrlSnapshot = normalizeNullableBaseUrl(environmentApiBaseUrl);
+	}
+
+	private String normalizeNullableBaseUrl(String baseUrl) {
+		if (baseUrl == null) {
+			return null;
+		}
+
+		String normalized = baseUrl.trim();
+		return normalized.isEmpty() ? null : normalized;
+	}
 }

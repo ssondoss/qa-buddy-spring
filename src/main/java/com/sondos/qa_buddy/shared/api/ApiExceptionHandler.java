@@ -8,7 +8,12 @@ import com.sondos.qa_buddy.users.exception.EmailNotVerifiedException;
 import com.sondos.qa_buddy.users.exception.InvalidCredentialsException;
 import com.sondos.qa_buddy.users.exception.InvalidVerificationTokenException;
 import com.sondos.qa_buddy.security.AuthenticatedUserNotFoundException;
+import com.sondos.qa_buddy.workflows.exception.RecordingCallbackUnauthorizedException;
+import com.sondos.qa_buddy.workflows.exception.RecordingNodeUnavailableException;
+import com.sondos.qa_buddy.workflows.exception.EnvironmentAlreadyExistsException;
+import com.sondos.qa_buddy.workflows.exception.EnvironmentNotFoundException;
 import com.sondos.qa_buddy.workflows.exception.WorkflowNotFoundException;
+import com.sondos.qa_buddy.workflows.exception.WorkflowVersionNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,6 +55,33 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(WorkflowNotFoundException.class)
 	public ResponseEntity<ApiResponse<Void>> handleWorkflowNotFound(WorkflowNotFoundException ex) {
 		return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), null);
+	}
+
+	@ExceptionHandler(WorkflowVersionNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleWorkflowVersionNotFound(WorkflowVersionNotFoundException ex) {
+		return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), null);
+	}
+
+	@ExceptionHandler(EnvironmentNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleEnvironmentNotFound(EnvironmentNotFoundException ex) {
+		return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), null);
+	}
+
+	@ExceptionHandler(EnvironmentAlreadyExistsException.class)
+	public ResponseEntity<ApiResponse<Void>> handleEnvironmentAlreadyExists(EnvironmentAlreadyExistsException ex) {
+		return buildError(HttpStatus.CONFLICT, ex.getMessage(), null);
+	}
+
+	@ExceptionHandler(RecordingCallbackUnauthorizedException.class)
+	public ResponseEntity<ApiResponse<Void>> handleRecordingCallbackUnauthorized(
+			RecordingCallbackUnauthorizedException ex
+	) {
+		return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), null);
+	}
+
+	@ExceptionHandler(RecordingNodeUnavailableException.class)
+	public ResponseEntity<ApiResponse<Void>> handleRecordingNodeUnavailable(RecordingNodeUnavailableException ex) {
+		return buildError(HttpStatus.BAD_GATEWAY, ex.getMessage(), null);
 	}
 
 	@ExceptionHandler(DataIntegrityViolationException.class)
