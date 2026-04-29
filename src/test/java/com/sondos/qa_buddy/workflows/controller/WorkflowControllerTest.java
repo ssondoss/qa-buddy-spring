@@ -16,17 +16,17 @@ import java.util.UUID;
 
 import com.sondos.qa_buddy.users.entity.User;
 import com.sondos.qa_buddy.users.repository.UserRepository;
-import com.sondos.qa_buddy.workflows.client.RecordingStartRequest;
-import com.sondos.qa_buddy.workflows.client.RecordingNodeClient;
+import com.sondos.qa_buddy.workflows.versions.client.RecordingStartNodeRequest;
+import com.sondos.qa_buddy.workflows.versions.client.RecordingNodeClient;
 import com.sondos.qa_buddy.workflows.environments.entity.Environment;
 import com.sondos.qa_buddy.workflows.entity.Workflow;
-import com.sondos.qa_buddy.workflows.entity.WorkflowStep;
-import com.sondos.qa_buddy.workflows.entity.WorkflowVersion;
-import com.sondos.qa_buddy.workflows.enums.WorkflowStepSource;
+import com.sondos.qa_buddy.workflows.versions.entity.Version;
+import com.sondos.qa_buddy.workflows.versions.entity.Step;
+import com.sondos.qa_buddy.workflows.versions.enums.StepSource;
 import com.sondos.qa_buddy.workflows.environments.repository.EnvironmentRepository;
 import com.sondos.qa_buddy.workflows.repository.WorkflowRepository;
-import com.sondos.qa_buddy.workflows.repository.WorkflowStepRepository;
-import com.sondos.qa_buddy.workflows.repository.WorkflowVersionRepository;
+import com.sondos.qa_buddy.workflows.versions.repository.StepRepository;
+import com.sondos.qa_buddy.workflows.versions.repository.VersionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,10 +48,10 @@ class WorkflowControllerTest {
 	private WorkflowRepository workflowRepository;
 
 	@Autowired
-	private WorkflowVersionRepository workflowVersionRepository;
+	private VersionRepository versionRepository;
 
 	@Autowired
-	private WorkflowStepRepository workflowStepRepository;
+	private StepRepository stepRepository;
 
 	@Autowired
 	private EnvironmentRepository environmentRepository;
@@ -93,8 +93,8 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.data.versionStatus").value("DRAFT"));
 
 		Workflow workflow = workflowRepository.findAll().getFirst();
-		WorkflowVersion version1 = workflowVersionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId()).getFirst();
-		List<WorkflowStep> version1Steps = workflowStepRepository.findByWorkflowVersionIdOrderByOrderIndexAsc(version1.getId());
+		Version version1 = versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId()).getFirst();
+		List<Step> version1Steps = stepRepository.findByVersionIdOrderByOrderIndexAsc(version1.getId());
 		assertThat(version1Steps).isEmpty();
 		assertThat(version1.getStatus().name()).isEqualTo("DRAFT");
 
@@ -127,15 +127,15 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.data.stepCount").value(0))
 				.andExpect(jsonPath("$.data.versionStatus").value("RECORDING"));
 
-		WorkflowVersion versionAfterStart = workflowVersionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId()).getFirst();
+		Version versionAfterStart = versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId()).getFirst();
 		assertThat(versionAfterStart.getStatus().name()).isEqualTo("RECORDING");
 		assertThat(versionAfterStart.getEnvironmentNameSnapshot()).isEqualTo("Staging");
 		assertThat(versionAfterStart.getEnvironmentWebBaseUrlSnapshot()).isEqualTo("https://example.com/");
 		assertThat(versionAfterStart.getEnvironmentApiBaseUrlSnapshot()).isNull();
 
-		var startRequestCaptor = org.mockito.ArgumentCaptor.forClass(RecordingStartRequest.class);
+		var startRequestCaptor = org.mockito.ArgumentCaptor.forClass(RecordingStartNodeRequest.class);
 		verify(recordingNodeClient).startRecording(startRequestCaptor.capture());
-		RecordingStartRequest startRequest = startRequestCaptor.getValue();
+		RecordingStartNodeRequest startRequest = startRequestCaptor.getValue();
 		assertThat(startRequest.workflowId()).isEqualTo(workflow.getId());
 		assertThat(startRequest.workflowVersionId()).isEqualTo(versionAfterStart.getId());
 		assertThat(startRequest.versionNumber()).isEqualTo(1);
@@ -174,15 +174,15 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.data.stepCount").value(2))
 				.andExpect(jsonPath("$.data.versionStatus").value("READY"));
 
-		List<WorkflowVersion> versions = workflowVersionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId());
+		List<Version> versions = versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId());
 		assertThat(versions).hasSize(1);
 		assertThat(versions.getFirst().getStatus().name()).isEqualTo("READY");
 
-		List<WorkflowStep> savedSteps = workflowStepRepository.findByWorkflowVersionIdOrderByOrderIndexAsc(
+		List<Step> savedSteps = stepRepository.findByVersionIdOrderByOrderIndexAsc(
 				versions.getFirst().getId()
 		);
 		assertThat(savedSteps).hasSize(2);
-		assertThat(savedSteps.get(0).getSource()).isEqualTo(WorkflowStepSource.RECORDED);
+		assertThat(savedSteps.get(0).getSource()).isEqualTo(StepSource.RECORDED);
 		assertThat(workflowRepository.findById(workflow.getId())).isPresent();
 		assertThat(workflowRepository.findById(workflow.getId()).get().getCurrentVersion()).isEqualTo(1);
 

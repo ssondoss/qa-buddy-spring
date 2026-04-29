@@ -5,16 +5,16 @@ import java.util.List;
 
 import com.sondos.qa_buddy.workflows.dto.WorkflowDetailResponse;
 import com.sondos.qa_buddy.workflows.dto.WorkflowListItemResponse;
-import com.sondos.qa_buddy.workflows.dto.WorkflowStepView;
+import com.sondos.qa_buddy.workflows.versions.dto.StepView;
 import com.sondos.qa_buddy.workflows.entity.Workflow;
-import com.sondos.qa_buddy.workflows.entity.WorkflowStep;
-import com.sondos.qa_buddy.workflows.entity.WorkflowVersion;
-import com.sondos.qa_buddy.workflows.repository.WorkflowVersionRepository;
+import com.sondos.qa_buddy.workflows.versions.entity.Version;
+import com.sondos.qa_buddy.workflows.versions.entity.Step;
+import com.sondos.qa_buddy.workflows.versions.repository.VersionRepository;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WorkflowResponseFactory {
-	public WorkflowListItemResponse toListItem(Workflow workflow, WorkflowVersion version) {
+	public WorkflowListItemResponse toListItem(Workflow workflow, Version version) {
 		return new WorkflowListItemResponse(
 				workflow.getId(),
 				workflow.getName(),
@@ -26,8 +26,8 @@ public class WorkflowResponseFactory {
 		);
 	}
 
-	public WorkflowStepView toStepView(WorkflowStep step) {
-		return new WorkflowStepView(
+	public StepView toStepView(Step step) {
+		return new StepView(
 				step.getOrderIndex(),
 				step.getAction(),
 				step.getSource(),
@@ -41,7 +41,7 @@ public class WorkflowResponseFactory {
 		);
 	}
 
-	public WorkflowDetailResponse toDetail(Workflow workflow, WorkflowVersion version, List<WorkflowStep> steps) {
+	public WorkflowDetailResponse toDetail(Workflow workflow, Version version, List<Step> steps) {
 		return new WorkflowDetailResponse(
 				workflow.getId(),
 				version.getId(),
@@ -57,10 +57,10 @@ public class WorkflowResponseFactory {
 
 	public List<WorkflowListItemResponse> toList(
 			List<Workflow> workflows,
-			WorkflowVersionRepository workflowVersionRepository
+			VersionRepository versionRepository
 	) {
 		return workflows.stream()
-				.map(workflow -> workflowVersionRepository.findByWorkflowIdAndVersionNumber(
+				.map(workflow -> versionRepository.findByWorkflowIdAndVersionNumber(
 								workflow.getId(),
 								workflow.getCurrentVersion()
 						)

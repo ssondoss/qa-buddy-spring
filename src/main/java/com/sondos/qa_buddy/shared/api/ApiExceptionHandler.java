@@ -8,12 +8,12 @@ import com.sondos.qa_buddy.users.exception.EmailNotVerifiedException;
 import com.sondos.qa_buddy.users.exception.InvalidCredentialsException;
 import com.sondos.qa_buddy.users.exception.InvalidVerificationTokenException;
 import com.sondos.qa_buddy.security.AuthenticatedUserNotFoundException;
-import com.sondos.qa_buddy.workflows.exception.RecordingCallbackUnauthorizedException;
-import com.sondos.qa_buddy.workflows.exception.RecordingNodeUnavailableException;
-import com.sondos.qa_buddy.workflows.exception.EnvironmentAlreadyExistsException;
-import com.sondos.qa_buddy.workflows.exception.EnvironmentNotFoundException;
+import com.sondos.qa_buddy.workflows.versions.exception.RecordingCallbackUnauthorizedException;
+import com.sondos.qa_buddy.workflows.versions.exception.RecordingNodeUnavailableException;
+import com.sondos.qa_buddy.workflows.environments.exceptions.EnvironmentAlreadyExistsException;
+import com.sondos.qa_buddy.workflows.environments.exceptions.EnvironmentNotFoundException;
 import com.sondos.qa_buddy.workflows.exception.WorkflowNotFoundException;
-import com.sondos.qa_buddy.workflows.exception.WorkflowVersionNotFoundException;
+import com.sondos.qa_buddy.workflows.versions.exception.VersionNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -57,8 +57,8 @@ public class ApiExceptionHandler {
 		return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), null);
 	}
 
-	@ExceptionHandler(WorkflowVersionNotFoundException.class)
-	public ResponseEntity<ApiResponse<Void>> handleWorkflowVersionNotFound(WorkflowVersionNotFoundException ex) {
+	@ExceptionHandler(VersionNotFoundException.class)
+	public ResponseEntity<ApiResponse<Void>> handleWorkflowVersionNotFound(VersionNotFoundException ex) {
 		return buildError(HttpStatus.NOT_FOUND, ex.getMessage(), null);
 	}
 

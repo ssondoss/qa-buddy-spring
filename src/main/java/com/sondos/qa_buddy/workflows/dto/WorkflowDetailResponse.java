@@ -4,7 +4,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import com.sondos.qa_buddy.workflows.enums.WorkflowVersionStatus;
+import com.sondos.qa_buddy.workflows.versions.dto.StepView;
+import com.sondos.qa_buddy.workflows.versions.enums.VersionStatus;
 
 public record WorkflowDetailResponse(
 		UUID workflowId,
@@ -12,8 +13,8 @@ public record WorkflowDetailResponse(
 		int versionNumber,
 		String name,
 		String description,
-		WorkflowVersionStatus versionStatus,
+		VersionStatus versionStatus,
 		Instant createdAt,
 		Instant updatedAt,
-		List<WorkflowStepView> steps
+		List<StepView> steps
 ) {}
