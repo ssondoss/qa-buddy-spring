@@ -10,5 +10,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface VersionRepository extends JpaRepository<Version, UUID> {
 	List<Version> findByWorkflowIdOrderByVersionNumberDesc(UUID workflowId);
 
+	Optional<Version> findFirstByWorkflowIdOrderByVersionNumberDesc(UUID workflowId);
+
 	Optional<Version> findByWorkflowIdAndVersionNumber(UUID workflowId, int versionNumber);
+
+	long countByWorkflowId(UUID workflowId);
 }

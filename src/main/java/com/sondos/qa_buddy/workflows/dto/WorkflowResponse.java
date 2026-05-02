@@ -1,13 +1,13 @@
 package com.sondos.qa_buddy.workflows.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
-import com.sondos.qa_buddy.workflows.versions.enums.VersionStatus;
-
 public record WorkflowResponse(
-		UUID workflowId,
-		UUID workflowVersionId,
-		int versionNumber,
-		int stepCount,
-		VersionStatus versionStatus
+		UUID id,
+		String name,
+		String description,
+		int versionsCount,
+		Instant createdAt,
+		Instant updatedAt
 ) {}

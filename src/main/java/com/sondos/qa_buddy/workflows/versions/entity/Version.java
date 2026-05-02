@@ -77,6 +77,10 @@ public class Version {
 		this.updatedAt = updatedAt;
 	}
 
+	public void touch(Instant updatedAt) {
+		this.updatedAt = updatedAt;
+	}
+
 	public void captureEnvironmentSnapshot(
 			String environmentName,
 			String environmentWebBaseUrl,

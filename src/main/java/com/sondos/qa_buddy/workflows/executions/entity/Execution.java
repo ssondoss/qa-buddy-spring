@@ -87,6 +87,17 @@ public class Execution {
 		this.environmentApiBaseUrlSnapshot = normalizeNullableBaseUrl(environmentApiBaseUrl);
 	}
 
+	public void updateOutcome(ExecutionStatus status, Instant startedAt, @Nullable Instant finishedAt) {
+		this.status = Objects.requireNonNull(status, "status must not be null");
+		this.startedAt = Objects.requireNonNull(startedAt, "startedAt must not be null");
+		this.finishedAt = finishedAt;
+	}
+
+	public void markFailed(Instant finishedAt) {
+		this.status = ExecutionStatus.FAILED;
+		this.finishedAt = Objects.requireNonNull(finishedAt, "finishedAt must not be null");
+	}
+
 	private String normalizeNullableBaseUrl(String baseUrl) {
 		if (baseUrl == null) {
 			return null;

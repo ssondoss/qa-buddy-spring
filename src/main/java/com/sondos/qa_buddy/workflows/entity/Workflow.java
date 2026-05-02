@@ -32,17 +32,13 @@ public class Workflow extends SoftDeletableEntity {
 	@Column(length = 2000)
 	private String description;
 
-	@Column(name = "current_version", nullable = false)
-	private int currentVersion;
-
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "created_by", nullable = false)
 	private User createdBy;
 
-	public void updateDetails(String name, String description, int currentVersion, Instant updatedAt) {
+	public void updateDetails(String name, String description, Instant updatedAt) {
 		this.name = name;
 		this.description = description;
-		this.currentVersion = currentVersion;
 		touch(updatedAt);
 	}
 }

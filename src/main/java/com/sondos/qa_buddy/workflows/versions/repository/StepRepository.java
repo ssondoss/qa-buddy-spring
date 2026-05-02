@@ -9,5 +9,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface StepRepository extends JpaRepository<Step, UUID> {
 	List<Step> findByVersionIdOrderByOrderIndexAsc(UUID versionId);
 
+	java.util.Optional<Step> findByVersionIdAndId(UUID versionId, UUID id);
+
 	void deleteByVersionId(UUID versionId);
 }

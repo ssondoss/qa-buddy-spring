@@ -3,6 +3,7 @@ package com.sondos.qa_buddy.workflows.versions.entity;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.time.Instant;
 
 import com.sondos.qa_buddy.shared.entity.AuditableEntity;
 import com.sondos.qa_buddy.users.entity.User;
@@ -81,4 +82,33 @@ public class Step extends AuditableEntity {
 
 	@Column(name = "retry_count", nullable = false)
 	private int retryCount;
+
+	public void updateDetails(
+			StepAction action,
+			StepSource source,
+			String selector,
+			String value,
+			String expectedValue,
+			Map<String, Object> meta,
+			boolean optional,
+			Integer timeoutMs,
+			int retryCount,
+			Instant updatedAt
+	) {
+		this.action = action;
+		this.source = source;
+		this.selector = selector;
+		this.value = value;
+		this.expectedValue = expectedValue;
+		this.meta = meta == null ? new LinkedHashMap<>() : new LinkedHashMap<>(meta);
+		this.optional = optional;
+		this.timeoutMs = timeoutMs;
+		this.retryCount = retryCount;
+		touch(updatedAt);
+	}
+
+	public void updateOrder(int orderIndex, Instant updatedAt) {
+		this.orderIndex = orderIndex;
+		touch(updatedAt);
+	}
 }

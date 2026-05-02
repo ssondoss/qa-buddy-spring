@@ -12,6 +12,7 @@ import com.sondos.qa_buddy.workflows.versions.client.RecordingStartNodeRequest;
 import com.sondos.qa_buddy.workflows.dto.WorkflowResponse;
 import com.sondos.qa_buddy.workflows.versions.dto.StepRequest;
 import com.sondos.qa_buddy.workflows.versions.dto.RecordingCompleteRequest;
+import com.sondos.qa_buddy.workflows.versions.dto.VersionView;
 import com.sondos.qa_buddy.workflows.environments.entity.Environment;
 import com.sondos.qa_buddy.workflows.entity.Workflow;
 import com.sondos.qa_buddy.workflows.versions.entity.Step;
@@ -20,8 +21,10 @@ import com.sondos.qa_buddy.workflows.versions.enums.StepSource;
 import com.sondos.qa_buddy.workflows.versions.enums.VersionStatus;
 import com.sondos.qa_buddy.workflows.environments.service.EnvironmentService;
 import com.sondos.qa_buddy.workflows.exception.WorkflowNotFoundException;
+import com.sondos.qa_buddy.workflows.factory.WorkflowResponseFactory;
 import com.sondos.qa_buddy.workflows.versions.exception.VersionNotFoundException;
 import com.sondos.qa_buddy.workflows.versions.factory.StepFactory;
+import com.sondos.qa_buddy.workflows.versions.factory.VersionResponseFactory;
 import com.sondos.qa_buddy.workflows.repository.WorkflowRepository;
 import com.sondos.qa_buddy.workflows.versions.repository.StepRepository;
 import com.sondos.qa_buddy.workflows.versions.repository.VersionRepository;
@@ -40,6 +43,8 @@ public class VersionService {
 	private final StepRepository stepRepository;
 	private final EnvironmentService environmentService;
 	private final RecordingNodeClient recordingNodeClient;
+	private final WorkflowResponseFactory workflowResponseFactory;
+	private final VersionResponseFactory versionResponseFactory;
 
 	public WorkflowResponse startRecording(Jwt jwt, UUID workflowId, com.sondos.qa_buddy.workflows.versions.dto.RecordingStartRequest request) {
 		User user = currentUserService.getCurrentUser(jwt);
@@ -48,33 +53,12 @@ public class VersionService {
 				.orElseThrow(WorkflowNotFoundException::new);
 
 		Instant now = Instant.now();
-		Version version = versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflowId)
-				.stream()
-				.findFirst()
-				.orElse(null);
-
-		if (version == null) {
-			version = createVersion(workflow, user, now, 1, VersionStatus.RECORDING, environment);
-			workflow.updateDetails(workflow.getName(), workflow.getDescription(), 1, now);
-			workflowRepository.save(workflow);
-		} else if (version.getStatus() == VersionStatus.DRAFT) {
-			version.beginRecording(
-					environment.getName(),
-					environment.getWebBaseUrl(),
-					environment.getApiBaseUrl(),
-					now
-			);
-			versionRepository.save(version);
-			workflow.updateDetails(workflow.getName(), workflow.getDescription(), workflow.getCurrentVersion(), now);
-			workflowRepository.save(workflow);
-		} else if (version.getStatus() == VersionStatus.RECORDING) {
-			return toResponse(workflow, version, 0);
-		} else {
-			int nextVersionNumber = workflow.getCurrentVersion() + 1;
-			version = createVersion(workflow, user, now, nextVersionNumber, VersionStatus.RECORDING, environment);
-			workflow.updateDetails(workflow.getName(), workflow.getDescription(), nextVersionNumber, now);
-			workflowRepository.save(workflow);
-		}
+		int nextVersionNumber = versionRepository.findFirstByWorkflowIdOrderByVersionNumberDesc(workflowId)
+				.map(Version::getVersionNumber)
+				.orElse(0) + 1;
+		Version version = createVersion(workflow, user, now, nextVersionNumber, VersionStatus.RECORDING, environment);
+		workflow.updateDetails(workflow.getName(), workflow.getDescription(), now);
+		workflowRepository.save(workflow);
 
 		try {
 			recordingNodeClient.startRecording(new RecordingStartNodeRequest(
@@ -93,7 +77,10 @@ public class VersionService {
 			throw ex;
 		}
 
-		return toResponse(workflow, version, 0);
+		return workflowResponseFactory.toResponse(
+				workflow,
+				Math.toIntExact(versionRepository.countByWorkflowId(workflowId))
+		);
 	}
 
 	@Transactional
@@ -112,11 +99,24 @@ public class VersionService {
 		version.updateStatus(finalStatus, now);
 		versionRepository.save(version);
 
-		int currentVersion = Math.max(workflow.getCurrentVersion(), version.getVersionNumber());
-		workflow.updateDetails(workflow.getName(), workflow.getDescription(), currentVersion, now);
+		workflow.updateDetails(workflow.getName(), workflow.getDescription(), now);
 		workflowRepository.save(workflow);
 
-		return toResponse(workflow, version, steps.size());
+		return workflowResponseFactory.toResponse(
+				workflow,
+				Math.toIntExact(versionRepository.countByWorkflowId(workflow.getId()))
+		);
+	}
+
+	@Transactional(readOnly = true)
+	public List<VersionView> getByWorkflowId(UUID workflowId) {
+		workflowRepository.findByIdAndDeletedAtIsNull(workflowId)
+				.orElseThrow(WorkflowNotFoundException::new);
+
+		return versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflowId)
+				.stream()
+				.map(versionResponseFactory::toView)
+				.toList();
 	}
 
 	private Version createVersion(
@@ -146,16 +146,6 @@ public class VersionService {
 		}
 
 		return versionRepository.save(version);
-	}
-
-	private WorkflowResponse toResponse(Workflow workflow, Version version, int stepCount) {
-		return new WorkflowResponse(
-				workflow.getId(),
-				version.getId(),
-				version.getVersionNumber(),
-				stepCount,
-				version.getStatus()
-		);
 	}
 
 	private String normalizeBaseUrl(String baseUrl) {

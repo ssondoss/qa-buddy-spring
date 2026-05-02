@@ -3,24 +3,21 @@ package com.sondos.qa_buddy.workflows.factory;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import com.sondos.qa_buddy.workflows.dto.WorkflowDetailResponse;
-import com.sondos.qa_buddy.workflows.dto.WorkflowListItemResponse;
-import com.sondos.qa_buddy.workflows.versions.dto.StepView;
+import com.sondos.qa_buddy.workflows.dto.WorkflowResponse;
 import com.sondos.qa_buddy.workflows.entity.Workflow;
-import com.sondos.qa_buddy.workflows.versions.entity.Version;
+import com.sondos.qa_buddy.workflows.versions.dto.StepView;
 import com.sondos.qa_buddy.workflows.versions.entity.Step;
 import com.sondos.qa_buddy.workflows.versions.repository.VersionRepository;
 import org.springframework.stereotype.Component;
 
 @Component
 public class WorkflowResponseFactory {
-	public WorkflowListItemResponse toListItem(Workflow workflow, Version version) {
-		return new WorkflowListItemResponse(
+	public WorkflowResponse toResponse(Workflow workflow, int versionCount) {
+		return new WorkflowResponse(
 				workflow.getId(),
 				workflow.getName(),
 				workflow.getDescription(),
-				version.getStatus(),
-				workflow.getCurrentVersion(),
+				versionCount,
 				workflow.getCreatedAt(),
 				workflow.getUpdatedAt()
 		);
@@ -28,6 +25,7 @@ public class WorkflowResponseFactory {
 
 	public StepView toStepView(Step step) {
 		return new StepView(
+				step.getId(),
 				step.getOrderIndex(),
 				step.getAction(),
 				step.getSource(),
@@ -41,39 +39,15 @@ public class WorkflowResponseFactory {
 		);
 	}
 
-	public WorkflowDetailResponse toDetail(Workflow workflow, Version version, List<Step> steps) {
-		return new WorkflowDetailResponse(
-				workflow.getId(),
-				version.getId(),
-				version.getVersionNumber(),
-				workflow.getName(),
-				workflow.getDescription(),
-				version.getStatus(),
-				workflow.getCreatedAt(),
-				workflow.getUpdatedAt(),
-				steps.stream().map(this::toStepView).toList()
-		);
-	}
-
-	public List<WorkflowListItemResponse> toList(
+	public List<WorkflowResponse> toList(
 			List<Workflow> workflows,
 			VersionRepository versionRepository
 	) {
 		return workflows.stream()
-				.map(workflow -> versionRepository.findByWorkflowIdAndVersionNumber(
-								workflow.getId(),
-								workflow.getCurrentVersion()
-						)
-						.map(version -> toListItem(workflow, version))
-						.orElseGet(() -> new WorkflowListItemResponse(
-								workflow.getId(),
-								workflow.getName(),
-								workflow.getDescription(),
-								null,
-								workflow.getCurrentVersion(),
-								workflow.getCreatedAt(),
-								workflow.getUpdatedAt()
-						)))
+				.map(workflow -> toResponse(
+						workflow,
+						Math.toIntExact(versionRepository.countByWorkflowId(workflow.getId()))
+				))
 				.toList();
 	}
 }

@@ -88,15 +88,18 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.status").value(201))
 				.andExpect(jsonPath("$.message").value("Workflow created"))
-				.andExpect(jsonPath("$.data.versionNumber").value(1))
-				.andExpect(jsonPath("$.data.stepCount").value(0))
-				.andExpect(jsonPath("$.data.versionStatus").value("DRAFT"));
+				.andExpect(jsonPath("$.data.id").isNotEmpty())
+				.andExpect(jsonPath("$.data.name").value("Login workflow"))
+				.andExpect(jsonPath("$.data.description").value("Manual workflow"))
+				.andExpect(jsonPath("$.data.versionsCount").value(0))
+				.andExpect(jsonPath("$.data.createdAt").isNotEmpty())
+				.andExpect(jsonPath("$.data.updatedAt").isNotEmpty());
 
-		Workflow workflow = workflowRepository.findAll().getFirst();
-		Version version1 = versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId()).getFirst();
-		List<Step> version1Steps = stepRepository.findByVersionIdOrderByOrderIndexAsc(version1.getId());
-		assertThat(version1Steps).isEmpty();
-		assertThat(version1.getStatus().name()).isEqualTo("DRAFT");
+		Workflow workflow = workflowRepository.findAll().stream()
+				.filter(candidate -> "Login workflow".equals(candidate.getName()))
+				.findFirst()
+				.orElseThrow();
+		assertThat(versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId())).isEmpty();
 
 		Environment environment = environmentRepository.save(
 				Environment.builder()
@@ -123,11 +126,13 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.status").value(200))
 				.andExpect(jsonPath("$.message").value("Recording started"))
-				.andExpect(jsonPath("$.data.versionNumber").value(1))
-				.andExpect(jsonPath("$.data.stepCount").value(0))
-				.andExpect(jsonPath("$.data.versionStatus").value("RECORDING"));
+				.andExpect(jsonPath("$.data.id").value(workflow.getId().toString()))
+				.andExpect(jsonPath("$.data.name").value("Login workflow"))
+				.andExpect(jsonPath("$.data.description").value("Manual workflow"))
+				.andExpect(jsonPath("$.data.versionsCount").value(1));
 
 		Version versionAfterStart = versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId()).getFirst();
+		assertThat(versionAfterStart.getVersionNumber()).isEqualTo(1);
 		assertThat(versionAfterStart.getStatus().name()).isEqualTo("RECORDING");
 		assertThat(versionAfterStart.getEnvironmentNameSnapshot()).isEqualTo("Staging");
 		assertThat(versionAfterStart.getEnvironmentWebBaseUrlSnapshot()).isEqualTo("https://example.com/");
@@ -145,9 +150,9 @@ class WorkflowControllerTest {
 		assertThat(startRequest.apiBaseUrl()).isNull();
 		assertThat(startRequest.startPath()).isEqualTo("/login");
 
-		version1 = versionAfterStart;
+		Version version1 = versionAfterStart;
 
-		mockMvc.perform(post("/api/workflow-versions/{workflowVersionId}/complete", version1.getId())
+		mockMvc.perform(post("/api/version/recording/complete/{workflowVersionId}", version1.getId())
 						.header("X-Integration-Secret", recordingSecret)
 						.contentType(APPLICATION_JSON)
 						.content("""
@@ -170,12 +175,14 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.status").value(200))
 				.andExpect(jsonPath("$.message").value("Recording completed"))
-				.andExpect(jsonPath("$.data.versionNumber").value(1))
-				.andExpect(jsonPath("$.data.stepCount").value(2))
-				.andExpect(jsonPath("$.data.versionStatus").value("READY"));
+				.andExpect(jsonPath("$.data.id").value(workflow.getId().toString()))
+				.andExpect(jsonPath("$.data.name").value("Login workflow"))
+				.andExpect(jsonPath("$.data.description").value("Manual workflow"))
+				.andExpect(jsonPath("$.data.versionsCount").value(1));
 
 		List<Version> versions = versionRepository.findByWorkflowIdOrderByVersionNumberDesc(workflow.getId());
 		assertThat(versions).hasSize(1);
+		assertThat(versions.getFirst().getVersionNumber()).isEqualTo(1);
 		assertThat(versions.getFirst().getStatus().name()).isEqualTo("READY");
 
 		List<Step> savedSteps = stepRepository.findByVersionIdOrderByOrderIndexAsc(
@@ -184,8 +191,6 @@ class WorkflowControllerTest {
 		assertThat(savedSteps).hasSize(2);
 		assertThat(savedSteps.get(0).getSource()).isEqualTo(StepSource.RECORDED);
 		assertThat(workflowRepository.findById(workflow.getId())).isPresent();
-		assertThat(workflowRepository.findById(workflow.getId()).get().getCurrentVersion()).isEqualTo(1);
-
 		mockMvc.perform(put("/api/workflows/{workflowId}", workflow.getId())
 						.with(jwt().jwt(jwt -> jwt.subject(user.getEmail()).claim("uid", userId.toString())))
 						.contentType(APPLICATION_JSON)
@@ -199,8 +204,10 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.success").value(true))
 				.andExpect(jsonPath("$.status").value(200))
 				.andExpect(jsonPath("$.message").value("Workflow updated"))
-				.andExpect(jsonPath("$.data.versionNumber").value(1))
-				.andExpect(jsonPath("$.data.versionStatus").value("READY"));
+				.andExpect(jsonPath("$.data.id").value(workflow.getId().toString()))
+				.andExpect(jsonPath("$.data.name").value("Login workflow renamed"))
+				.andExpect(jsonPath("$.data.description").value("Updated workflow"))
+				.andExpect(jsonPath("$.data.versionsCount").value(1));
 
 		mockMvc.perform(get("/api/workflows")
 						.with(jwt().jwt(jwt -> jwt.subject(user.getEmail()).claim("uid", userId.toString())))
@@ -210,19 +217,11 @@ class WorkflowControllerTest {
 				.andExpect(jsonPath("$.status").value(200))
 				.andExpect(jsonPath("$.message").value("Workflows fetched"))
 				.andExpect(jsonPath("$.data.length()").value(1))
-				.andExpect(jsonPath("$.data[0].workflowId").value(workflow.getId().toString()))
-				.andExpect(jsonPath("$.data[0].currentVersion").value(1))
-				.andExpect(jsonPath("$.data[0].currentVersionStatus").value("READY"));
-
-		mockMvc.perform(get("/api/workflows/{workflowId}", workflow.getId())
-						.with(jwt().jwt(jwt -> jwt.subject(user.getEmail()).claim("uid", userId.toString()))))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.success").value(true))
-				.andExpect(jsonPath("$.status").value(200))
-				.andExpect(jsonPath("$.message").value("Workflow fetched"))
-				.andExpect(jsonPath("$.data.workflowId").value(workflow.getId().toString()))
-				.andExpect(jsonPath("$.data.versionNumber").value(1))
-				.andExpect(jsonPath("$.data.versionStatus").value("READY"))
-				.andExpect(jsonPath("$.data.steps.length()").value(2));
+				.andExpect(jsonPath("$.data[0].id").value(workflow.getId().toString()))
+				.andExpect(jsonPath("$.data[0].name").value("Login workflow renamed"))
+				.andExpect(jsonPath("$.data[0].description").value("Updated workflow"))
+				.andExpect(jsonPath("$.data[0].versionsCount").value(1))
+				.andExpect(jsonPath("$.data[0].createdAt").isNotEmpty())
+				.andExpect(jsonPath("$.data[0].updatedAt").isNotEmpty());
 	}
 }

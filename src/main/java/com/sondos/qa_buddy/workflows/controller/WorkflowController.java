@@ -4,10 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 import com.sondos.qa_buddy.shared.api.ApiResponse;
-import com.sondos.qa_buddy.workflows.dto.WorkflowDetailResponse;
-import com.sondos.qa_buddy.workflows.dto.WorkflowRequest;
 import com.sondos.qa_buddy.workflows.dto.WorkflowResponse;
-import com.sondos.qa_buddy.workflows.dto.WorkflowListItemResponse;
+import com.sondos.qa_buddy.workflows.dto.WorkflowUpsertRequest;
 import com.sondos.qa_buddy.workflows.service.WorkflowService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +30,7 @@ public class WorkflowController {
 	@PostMapping
 	public ResponseEntity<ApiResponse<WorkflowResponse>> create(
 			@AuthenticationPrincipal Jwt jwt,
-			@Valid @RequestBody WorkflowRequest request
+			@Valid @RequestBody WorkflowUpsertRequest request
 	) {
 		WorkflowResponse response = workflowService.create(jwt, request);
 		return ResponseEntity.status(HttpStatus.CREATED)
@@ -43,21 +41,16 @@ public class WorkflowController {
 	public ApiResponse<WorkflowResponse> update(
 			@AuthenticationPrincipal Jwt jwt,
 			@PathVariable UUID workflowId,
-			@Valid @RequestBody WorkflowRequest request
+			@Valid @RequestBody WorkflowUpsertRequest request
 	) {
 		WorkflowResponse response = workflowService.update(jwt, workflowId, request);
 		return ApiResponse.success(HttpStatus.OK.value(), "Workflow updated", response);
 	}
 
-	@GetMapping
-	public ResponseEntity<ApiResponse<List<WorkflowListItemResponse>>> getAll() {
-		List<WorkflowListItemResponse> response = workflowService.getAll();
-		return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Workflows fetched", response));
-	}
 
-	@GetMapping("/{workflowId}")
-	public ApiResponse<WorkflowDetailResponse> getById(@PathVariable UUID workflowId) {
-		WorkflowDetailResponse response = workflowService.getById(workflowId);
-		return ApiResponse.success(HttpStatus.OK.value(), "Workflow fetched", response);
+	@GetMapping
+	public ResponseEntity<ApiResponse<List<WorkflowResponse>>> getAll() {
+		List<WorkflowResponse> response = workflowService.getAll();
+		return ResponseEntity.ok(ApiResponse.success(HttpStatus.OK.value(), "Workflows fetched", response));
 	}
 }

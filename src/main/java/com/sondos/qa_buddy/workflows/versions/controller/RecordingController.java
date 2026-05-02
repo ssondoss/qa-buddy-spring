@@ -4,8 +4,8 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
 import com.sondos.qa_buddy.shared.api.ApiResponse;
-import com.sondos.qa_buddy.workflows.versions.dto.RecordingStartRequest;
 import com.sondos.qa_buddy.workflows.dto.WorkflowResponse;
+import com.sondos.qa_buddy.workflows.versions.dto.RecordingStartRequest;
 import com.sondos.qa_buddy.workflows.versions.dto.RecordingCompleteRequest;
 import com.sondos.qa_buddy.workflows.versions.exception.RecordingCallbackUnauthorizedException;
 import com.sondos.qa_buddy.workflows.versions.service.VersionService;
@@ -47,7 +47,7 @@ public class RecordingController {
 
 	@PostMapping("/complete/{workflowVersionId}")
 	public ResponseEntity<ApiResponse<WorkflowResponse>> completeRecording(
-			@PathVariable UUID workflowVersionId,
+			@PathVariable("workflowVersionId") UUID workflowVersionId,
 			@RequestHeader(value = "X-Integration-Secret", required = false) String recordingSecret,
 			@Valid @RequestBody RecordingCompleteRequest request
 	) {
